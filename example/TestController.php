@@ -1,6 +1,6 @@
 <?php
 
-use \Jacwright\RestServer\RestException;
+use \OS\RestException;
 
 class TestController
 {

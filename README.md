@@ -10,12 +10,35 @@ My solution, `RestServer`, is a JSON REST server, so far. It should be trivial t
 
 The `RestServer` class assumes you are using URL rewriting and looks at the URL from the
 request to map to the necessary actions. The map that gets a request from URL to class
-method is all in the doc-comments of the classes. Here is an example of a class that
+method was all in the doc-comments of the classes. Now it is replaced with route function inside each individual controller class. Here is an example of a class that
 would handle some user actions:
 
 ```php
 class TestController
 {
+
+	public static function route(){
+		return array(
+			
+			"login" => array(
+				"noAuth" => false,
+				"url" => array("GET","login")
+			),
+			"test" => array(
+				"noAuth" => false,
+				"url" => array(array("GET","/"),array("GET","test"),array("GET","test2")),
+			),
+			"getUser" => array(
+				"noAuth" => false,
+				"url" => array("GET","getuser")
+			),
+			"saveUser" => array(
+				"noAuth" => false,
+				"url" => array("GET","saveuser")
+			),
+		);
+	}
+	
     /**
      * Returns a JSON string object to the browser when hitting the root of the domain
      *
@@ -72,7 +95,7 @@ class TestController
 }
 ```
 
-Let’s walk through the above `TestController` class to talk about the features demonstrated. First we’ll look at the `test` method. You’ll notice there is a new kind of doc-comment tag in the docblock. `@url` maps a URL to the method below it and is in the form:
+Let’s walk through the above `TestController` class to talk about the features demonstrated. First we’ll look at the `test` method. 
 
 `@url <REQUEST_METHOD> <URL>`
 
