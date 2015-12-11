@@ -23,7 +23,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace Jacwright\RestServer;
+namespace OS\RestServer;
 
 require(__DIR__ . '/RestFormat.php');
 require(__DIR__ . '/RestException.php');
@@ -103,8 +103,9 @@ class RestServer
 	
 	
 	public function handle()
-	{
+	{ 
 		$this->url = $this->getPath();
+		
 		$this->method = $this->getMethod();
 		$this->format = $this->getFormat();
 		
@@ -156,6 +157,7 @@ class RestServer
 		$this->loadCache();
 		
 		if (!$this->cached) {
+			
 			if (is_string($class) && !class_exists($class)){
 				throw new Exception('Invalid method or class');
 			} elseif (!is_string($class) && !is_object($class)) {
@@ -241,7 +243,16 @@ class RestServer
 			$args = $call[2];
 			
 			if (!strstr($url, '$')) {
-				if ($url == $this->url) {
+				/*
+				 * Added by Yusuf 
+				 * @ 11 DEC 2015
+				 * MODSTART
+				 */
+				if ($url == $this->url || $url == $this->url."/") {
+				/*
+				 * MODEND
+				 */
+				 //if ($url == $this->url) {
 					if (isset($args['data'])) {
 						$params = array_fill(0, $args['data'] + 1, null);
 						$params[$args['data']] = $this->data;   //@todo data is not a property of this class
@@ -297,6 +308,53 @@ class RestServer
 		
 		$methods = $reflection->getMethods(ReflectionMethod::IS_PUBLIC);    //@todo $reflection might not be instantiated
 		
+		
+		/*
+		 * Added by Yusuf 
+		 * @ 11 DEC 2015
+		 * MODSTART
+		 */
+		$mapMethod =  new ReflectionMethod($class, 'route');
+		$methodMap = $mapMethod->invoke(new $class);
+		
+		foreach($methods as $method){
+			if(array_key_exists($method->name, $methodMap)){
+				$methodOptions = $methodMap[$method->name];
+				$noAuth = $methodOptions['noAuth'] !== false;
+				
+				$params 		= $method->getParameters();
+				
+				
+				
+				if(!is_array($methodOptions['url'][0])){
+					$methodOptions['url'] = array($methodOptions['url']);
+				}
+				
+				foreach($methodOptions['url'] as $methodUrl){
+					$url			= ($methodUrl[1]!='/')?$basePath.$methodUrl[1]:$basePath;
+					
+					$httpMethod		= $methodUrl[0];
+					
+					$call = array($class, $method->getName());
+					$args = array();
+					foreach ($params as $param) {
+						$args[$param->getName()] = $param->getPosition();
+					}
+					$call[] = $args;
+					$call[] = null;
+					$call[] = $noAuth;				
+					$this->map[$httpMethod][$url] = $call;
+				}
+			}
+		}
+		/*
+		 * MODEND
+		 * /
+		
+		/*
+		 * 
+		 * Comment yerine routing tanımlandı
+		
 		foreach ($methods as $method) {
 			$doc = $method->getDocComment();
 			$noAuth = strpos($doc, '@noAuth') !== false;
@@ -322,7 +380,7 @@ class RestServer
 					$this->map[$httpMethod][$url] = $call;
 				}
 			}
-		}
+		}*/
 	}
 
 	public function getPath()
@@ -332,6 +390,11 @@ class RestServer
 		if ($this->root) $path = preg_replace('/^' . preg_quote($this->root, '/') . '/', '', $path);
 		// remove trailing format definition, like /controller/action.json -> /controller/action
 		$path = preg_replace('/\.(\w+)$/i', '', $path);
+		
+		if(substr($path,strlen($path)-1,1)=='/'){
+			$path = substr($path,0,strlen($path)-1);
+		}
+		
 		return $path;
 	}
 	
